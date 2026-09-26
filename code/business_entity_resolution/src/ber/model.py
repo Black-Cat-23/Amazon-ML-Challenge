@@ -10,10 +10,10 @@ import numpy as np
 import polars as pl
 
 from . import blocking as B
-from .decide import exclusive_posterior, expected_f_decode, rank_threshold, source_caps
+from .decide import conditioned_rank_threshold, exclusive_posterior, expected_f_decode, rank_threshold, source_caps
 from .features import feature_columns, pair_features
 
-RULES = ("rank-threshold", "expected-F", "expected-F + exclusivity", "expected-F + has-head")
+RULES = ("rank-threshold", "conditioned-rank-threshold", "expected-F", "expected-F + exclusivity", "expected-F + has-head")
 
 
 def prune_pool(pool: pl.DataFrame, policy: dict) -> pl.DataFrame:
@@ -70,6 +70,8 @@ def decide(d: pl.DataFrame, cfg: dict, head=None) -> pl.DataFrame:
     rule, g = cfg["rule"], cfg.get("gamma", 1.0)
     if rule == "rank-threshold":
         return source_caps(rank_threshold(d, cfg["t1"], cfg["t2"]), d)
+    if rule == "conditioned-rank-threshold":
+        return source_caps(conditioned_rank_threshold(d, cfg["t1"], cfg["t2"], cfg.get("t2_strong", 0.58), cfg.get("p_strong", 0.90)), d)
     if rule == "expected-F":
         return efd(d, g)
     if rule == "expected-F + exclusivity":

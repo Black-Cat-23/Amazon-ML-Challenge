@@ -31,6 +31,24 @@ def rank_threshold(d: pl.DataFrame, t1: float, t2: float, p: str = "p") -> pl.Da
     return d.filter(((pl.col("_rk") == 1) & (pl.col(p) > t1)) | ((pl.col("_rk") > 1) & (pl.col(p) > t2))).select("s1", "r")
 
 
+def conditioned_rank_threshold(d: pl.DataFrame, t1: float, t2: float, t2_strong: float = 0.58,
+                               p_strong: float = 0.90, p: str = "p") -> pl.DataFrame:
+    """Two-stage conditioned threshold:
+       - Rank 1 candidate is accepted if p > t1 (protects singletons).
+       - If Rank 1 is strong (p1 >= p_strong), S1 is a confirmed non-singleton;
+         secondary candidates (_rk > 1) are accepted if p > t2_strong (recovers missed recall).
+       - Otherwise, secondary candidates must pass the standard t2.
+    """
+    d = d.sort("r").with_columns(
+        pl.col(p).rank("ordinal", descending=True).over("s1").alias("_rk"),
+        pl.col(p).max().over("s1").alias("_p1")
+    ).with_columns(
+        pl.when(pl.col("_p1") >= p_strong).then(pl.lit(t2_strong)).otherwise(pl.lit(t2)).alias("_eff_t2")
+    )
+    return d.filter(((pl.col("_rk") == 1) & (pl.col(p) > t1)) | ((pl.col("_rk") > 1) & (pl.col(p) > pl.col("_eff_t2")))).select("s1", "r")
+
+
+
 def source_caps(sel: pl.DataFrame, d: pl.DataFrame, p: str = "p", caps: dict = CAPS, total: int = 11) -> pl.DataFrame:
     """Keep at most caps[source] accepted records per S1 and source, and `total` per S1 (highest p first)."""
     x = sel.join(d.select("s1", "r", p), on=["s1", "r"], how="left").with_columns(pl.col("r").str.slice(0, 2).alias("_src"))
