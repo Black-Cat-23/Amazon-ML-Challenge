@@ -38,12 +38,9 @@ def tokens(e: pl.Expr, pattern: str = TOKEN_RE) -> pl.Expr:
 
 def translit_col(df: pl.DataFrame, col: str) -> pl.DataFrame:
     """Rule-based transliteration applied only to rows containing Indic script (fallback path)."""
-    return df.with_columns(
-        pl.when(pl.col(col).fill_null("").str.contains(INDIC_RE))
-        .then(pl.col(col).map_elements(translit, return_dtype=pl.String))
-        .otherwise(pl.col(col))
-        .alias(col)
-    )
+    vals = df[col].to_list()
+    out = [translit(v) if v and re.search(INDIC_RE, v) else v for v in vals]
+    return df.with_columns(pl.Series(col, out))
 
 
 _LEET_TOK = re.compile(r"^[a-z]*[0-9][a-z]*$")

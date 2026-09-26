@@ -196,10 +196,9 @@ def street_filter(sel: pl.DataFrame, S1: pl.DataFrame, R: pl.DataFrame, countrie
         return sel
     r = R.filter(pl.col("entity_id").is_in(x["r"].unique().implode())).select(pl.col("entity_id").alias("r"), street_words("business_address").alias("_w2"))
     x = x.join(r, on="r", how="left")
-    def sim(v):
-        a, b = v["_w1"], v["_w2"]
-        return None if not a or not b else max(fuzz.ratio(p, q) for p in a for q in b)
-    x = x.with_columns(pl.struct("_w1", "_w2").map_elements(sim, return_dtype=pl.Float64).alias("_ss"))
+    w1_vals, w2_vals = x["_w1"].to_list(), x["_w2"].to_list()
+    ss_vals = [None if not a or not b else max(fuzz.ratio(p, q) for p in a for q in b) for a, b in zip(w1_vals, w2_vals)]
+    x = x.with_columns(pl.Series("_ss", ss_vals, dtype=pl.Float64))
     bad = x.filter((pl.col("_ss") < t).fill_null(False)).select("s1", "r")
     log(f"street filter ({', '.join(countries)}, ratio < {t}): {bad.height} of {x.height} pairs removed")
     return sel.join(bad, on=["s1", "r"], how="anti")

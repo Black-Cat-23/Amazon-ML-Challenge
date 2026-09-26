@@ -96,12 +96,16 @@ class Normalizer:
         d = df.select("entity_id", "country", pl.col("business_name").fill_null("").alias("n0"),
                       pl.col("business_address").fill_null("").alias("a0"))
         # Indic names: learned lexicon (+ test sibling/OOV map), translit fallback; Indic address phrases: translit
-        d = d.with_columns(
-            pl.when(pl.col("n0").str.contains(INDIC_RE)).then(pl.col("n0").map_elements(self._indic_name, return_dtype=pl.String)).otherwise(pl.col("n0")).alias("n0"),
-            pl.when(pl.col("a0").str.contains(INDIC_RE)).then(pl.col("a0").map_elements(translit, return_dtype=pl.String)).otherwise(pl.col("a0")).alias("a0"))
+        n0_vals = d["n0"].to_list()
+        n0_out = [self._indic_name(v) if v and re.search(INDIC_RE, v) else v for v in n0_vals]
+        a0_vals = d["a0"].to_list()
+        a0_out = [translit(v) if v and re.search(INDIC_RE, v) else v for v in a0_vals]
+        d = d.with_columns(pl.Series("n0", n0_out), pl.Series("a0", a0_out))
         # web handles -> segmented words
-        d = d.with_columns(pl.when(pl.col("n0").str.contains(WEB_RE)).then(
-            pl.struct("n0", "country").map_elements(lambda x: self._web(x["n0"] or "", x["country"] or ""), return_dtype=pl.String)).otherwise(pl.col("n0")).alias("n0"))
+        n0_vals = d["n0"].to_list()
+        ctry_vals = d["country"].to_list()
+        n0_web = [self._web(n or "", c or "") if n and re.search(WEB_RE, n) else n for n, c in zip(n0_vals, ctry_vals)]
+        d = d.with_columns(pl.Series("n0", n0_web))
         # alias split: 'X f/k/a Y' -> main Y (right side), alias X
         parts = pl.col("n0").str.replace(ALIAS_RE, "\x00").str.split("\x00")
         d = d.with_columns(pl.when(parts.list.len() == 2).then(parts.list.get(1, null_on_oob=True)).otherwise(pl.col("n0")).alias("nmain"),
@@ -109,10 +113,16 @@ class Normalizer:
         tok = lambda e: base_clean(e).str.replace_all(r"#\s*\d+|\(id:?\s*\d+\)", " ").str.extract_all(r"[a-z0-9]+")
         d = d.with_columns(tok(pl.col("nmain")).alias("nw"), tok(pl.col("nalias")).alias("alias"))
         # leet fix, only on rows whose name mixes letters and digits inside a word
-        mixed = pl.col("nmain").str.to_lowercase().str.contains(r"[a-z][0-9]|[0-9][a-z]")
-        fixl = lambda l: [leet_fix_token(t) for t in l]
-        d = d.with_columns(pl.when(mixed).then(pl.col("nw").map_elements(fixl, return_dtype=pl.List(pl.String))).otherwise(pl.col("nw"))
-                           .list.unique(maintain_order=True).alias("nw"))
+        nmain_lower = d["nmain"].str.to_lowercase().to_list()
+        nw_vals = d["nw"].to_list()
+        nw_fixed = []
+        leet_check = re.compile(r"[a-z][0-9]|[0-9][a-z]")
+        for nm, l in zip(nmain_lower, nw_vals):
+            if nm and leet_check.search(nm) and l:
+                nw_fixed.append([leet_fix_token(t) for t in l])
+            else:
+                nw_fixed.append(l if l is not None else [])
+        d = d.with_columns(pl.Series("nw", nw_fixed).list.unique(maintain_order=True))
         legal, noise, decoy = list(LEGAL), list(self.noise), list(self.decoy)
         d = d.with_columns(
             pl.col("nw").list.eval(pl.element().filter(~pl.element().is_in(legal) & ~pl.element().is_in(noise))).alias("core"),

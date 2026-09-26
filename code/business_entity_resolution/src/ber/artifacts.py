@@ -40,8 +40,8 @@ def fit_oov_map(words: list[str], vocab: pl.DataFrame) -> pl.DataFrame:
     v = vocab.filter(pl.col("token").str.len_chars() >= 2).with_columns(skeleton(pl.col("token")).alias("sk"))
     by_sk = v.sort("n", descending=True).group_by("sk").first()
     sk_map = dict(zip(by_sk["sk"].to_list(), by_sk["token"].to_list()))
-    choices = v.sort("n", descending=True).head(200_000)["token"].to_list()
-    w = pl.DataFrame({"indic": words}).with_columns(pl.col("indic").map_elements(translit, return_dtype=pl.String).alias("tl"))
+    tl_list = [translit(w) for w in words]
+    w = pl.DataFrame({"indic": words, "tl": tl_list})
     w = w.with_columns(skeleton(pl.col("tl")).alias("sk"))
     out = []
     for indic, tl, sk in w.iter_rows():
