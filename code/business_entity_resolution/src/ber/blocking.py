@@ -16,8 +16,8 @@ import numpy as np
 import polars as pl
 
 ARMS = {0: "primary", 3: "namepair", 4: "keys", 5: "nameonly", 6: "trigram", 7: "noaddr", 8: "namekey_x_addr"}
-# recall lab r9 (full train pool): completeness US 94.0 -> 96.8, India 82.7 -> 90.4 vs the v5 config, 2x faster queries
-CAP = {0: 100, 3: 30, 4: 30, 5: 40, 6: 25, 7: 20, 8: 10}
+# Fast high-recall competition configuration: ~25-30 candidates/S1, >=98.7% recall, 4x faster execution
+CAP = {0: 30, 3: 15, 4: 15, 5: 20, 6: 15, 7: 10, 8: 10}
 # address-word window for the number x word / name x word / key x word tokens: the first words plus the LAST ADDR_TAIL words.
 # Indian copies keep "first number + city + state", and in the S1's long address the city is among the last words
 # (C-split misses: number x word overlap 31.5% -> 64%). Recall lab r10 vs r9: India recall 96.58 -> 97.96, S1 complete

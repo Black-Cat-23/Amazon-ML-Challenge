@@ -45,7 +45,7 @@ def _block_shard(idx, Q, R, sig, keep_prk, rel_chunk):
     return cand
 
 
-def candidates(S_raw: pl.DataFrame, R_raw: pl.DataFrame, S_all_raw: pl.DataFrame, nz, log=print, keep_prk: int = 60,
+def candidates(S_raw: pl.DataFrame, R_raw: pl.DataFrame, S_all_raw: pl.DataFrame, nz, log=print, keep_prk: int = 25,
                rev_cap: int = 3, rel_chunk: int = 2_000_000, shard: int = 100_000) -> pl.DataFrame:
     """S_raw: S1s to query; R_raw: the country's S2/S3 records; S_all_raw: ALL S1s of the country (reverse lookups).
     Deterministic: inputs are put in entity_id order, so row ids (rank tie-breaks) do not depend on input order.
