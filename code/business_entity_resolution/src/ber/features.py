@@ -72,6 +72,11 @@ def pair_features(P: pl.DataFrame, QN: pl.DataFrame, RN: pl.DataFrame) -> pl.Dat
         (inter("sk_s", "sk_r") / pl.max_horizontal(pl.col("sk_s").list.len(), pl.col("sk_r").list.len(), pl.lit(1))).alias("sk_jacc"),
         (inter("nw_s", "nw_r") / pl.max_horizontal(pl.col("nw_s").list.len(), pl.col("nw_r").list.len(), pl.lit(1))).alias("nw_jacc"),
         (inter("aw_s", "aw_r") / pl.max_horizontal(pl.col("aw_s").list.len(), pl.col("aw_r").list.len(), pl.lit(1))).alias("aw_jacc"),
+        (pl.col("aw_s").list.tail(3).list.set_intersection(pl.col("aw_r").list.tail(3)).list.len() /
+         pl.max_horizontal(pl.col("aw_s").list.tail(3).list.unique().list.len(), pl.col("aw_r").list.tail(3).list.unique().list.len(), pl.lit(1))).alias("aw_tail_jacc"),
+        pl.when((pl.col("core_s").list.first().is_not_null()) & (pl.col("core_r").list.first().is_not_null()) &
+                (pl.col("core_s").list.first() == pl.col("core_r").list.first()) &
+                (pl.col("core_s").list.first().str.len_chars() >= 3)).then(1).otherwise(0).cast(pl.Int8).alias("first_token_eq"),
         pl.when((pl.col("legal_s").list.len() == 0) | (pl.col("legal_r").list.len() == 0)).then(2)
           .when(inter("legal_s", "legal_r") > 0).then(0).otherwise(1).alias("legal_rel"),
         (pl.col("decoy_r").list.set_difference(pl.col("decoy_s")).list.len()).alias("n_decoy_extra"),
@@ -86,6 +91,20 @@ def pair_features(P: pl.DataFrame, QN: pl.DataFrame, RN: pl.DataFrame) -> pl.Dat
     )
     hs = [house_relation(a, b) for a, b in zip(d["ad_s"].list.first().to_list(), d["ad_r"].list.first().to_list())]
     d = d.with_columns(pl.Series("house_rel", hs, dtype=pl.Int8))
+    d = d.with_columns(
+        pl.when(pl.col("house_rel").is_in([2, 3, 4]) & (pl.col("nm_tset") >= 80) & (pl.col("noaddr_r") == 0) & (pl.col("noaddr_s") == 0))
+          .then(1).otherwise(0).cast(pl.Int8).alias("digit_conflict")
+    )
+    if "s1_name_freq" in d.columns:
+        d = d.with_columns(
+            pl.when((pl.col("s1_name_freq") <= 1) & (pl.col("noaddr_r") == 1) & (pl.col("nm_tset") >= 88)).then(1).otherwise(0).cast(pl.Int8).alias("unique_brand_noaddr"),
+            pl.when((pl.col("s1_name_freq") <= 2) & (pl.col("nm_tset") >= 90)).then(1).otherwise(0).cast(pl.Int8).alias("rare_brand_high_nm"),
+        )
+    else:
+        d = d.with_columns(
+            pl.lit(0, dtype=pl.Int8).alias("unique_brand_noaddr"),
+            pl.lit(0, dtype=pl.Int8).alias("rare_brand_high_nm"),
+        )
     if "rel" in d.columns:
         d = d.with_columns(pl.col("rel").replace_strict(REL_CODES, default=4, return_dtype=pl.Int8).alias("num_rel"))
     # context within the S1's candidate list
