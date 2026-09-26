@@ -30,7 +30,7 @@ def _block_shard(idx, Q, R, sig, keep_prk, rel_chunk):
     cand = pl.concat([cand, ex.with_columns(pl.lit(0.0, dtype=pl.Float32).alias("sc"), pl.lit(None, dtype=pl.UInt32).alias("prk"),
                                             pl.lit(None, dtype=pl.UInt32).alias("xrk"), *[pl.lit(False).alias(f"a{k}") for k in B.ARMS])
                       .select(cand.columns)], how="vertical_relaxed")
-    del ex
+    del ex; gc.collect()
     cand = cand.with_columns((pl.col("prk").is_null() & pl.col("xrk").is_null()).alias("exp"))
     cand = cand.filter((pl.col("prk") <= keep_prk) | pl.col("xrk").is_not_null() | pl.col("exp"))
     cand = cand.join(sig.rename({"id": "id_r"}), on="id_r", how="left").with_columns(
@@ -41,14 +41,15 @@ def _block_shard(idx, Q, R, sig, keep_prk, rel_chunk):
     pr = cand.select("id", "id_r")
     rel = pl.concat([B.number_relation(pr.slice(i, rel_chunk), Q, R) for i in range(0, pr.height, rel_chunk)])
     cand = cand.join(rel, on=["id", "id_r"], how="left").with_columns(pl.col("rel").cast(pl.Categorical))
+    del pr, rel; gc.collect()
     return cand
 
 
-def candidates(S_raw: pl.DataFrame, R_raw: pl.DataFrame, S_all_raw: pl.DataFrame, nz, log=print, keep_prk: int = 60,
-               rev_cap: int = 3, rel_chunk: int = 10_000_000, shard: int = 250_000) -> pl.DataFrame:
+def candidates(S_raw: pl.DataFrame, R_raw: pl.DataFrame, S_all_raw: pl.DataFrame, nz, log=print, keep_prk: int = 35,
+               rev_cap: int = 3, rel_chunk: int = 2_000_000, shard: int = 100_000) -> pl.DataFrame:
     """S_raw: S1s to query; R_raw: the country's S2/S3 records; S_all_raw: ALL S1s of the country (reverse lookups).
     Deterministic: inputs are put in entity_id order, so row ids (rank tie-breaks) do not depend on input order.
-    S1s are queried in shards of `shard` (memory: 800k S1 x ~165 raw candidates does not fit at once); results are
+    S1s are queried in shards of `shard` (memory-safe streaming); results are
     identical to one pass because every S1's candidate list depends only on that S1 and the index."""
     S_raw, R_raw, S_all_raw = (x.sort("entity_id") for x in (S_raw, R_raw, S_all_raw))
     R = norm_chunks(nz, R_raw).with_columns(pl.Series("id", np.arange(R_raw.height, dtype=np.uint32)))
@@ -79,12 +80,12 @@ def candidates(S_raw: pl.DataFrame, R_raw: pl.DataFrame, S_all_raw: pl.DataFrame
         best = rev.group_by("id_r").agg(pl.col("rsc").max().alias("rbest"))
         mine = rev.filter(pl.col("sq").is_not_null()).select("id_r", pl.col("sq").alias("id"), "rsc")
         cand = cand.join(mine, on=["id", "id_r"], how="left").join(best, on="id_r", how="left")
+        del rev, best, mine; gc.collect()
     cand = cand.with_columns(((pl.col("rsc").fill_null(0.0) - pl.col("rbest")) / pl.col("rbest")).fill_null(0.0).cast(pl.Float32).alias("rev_margin"))
-    # ids are row positions in the entity_id-sorted frames -> map by gather (a join would copy all 180M rows twice)
+    # ids are row positions in the entity_id-sorted frames -> map by gather (a join would copy all rows twice)
     s1_ids, r_ids, nq = Q["entity_id"], R["entity_id"], Q.height
-    del Q, R; gc.collect()
-    cand = cand.with_columns(s1_ids.gather(cand["id"]).alias("s1"))
-    cand = cand.with_columns(r_ids.gather(cand["id_r"]).alias("r")).drop("id", "id_r")
+    del Q, R, sig; gc.collect()
+    cand = cand.with_columns(s1_ids.gather(cand["id"]).alias("s1"), r_ids.gather(cand["id_r"]).alias("r")).drop("id", "id_r")
     cand = cand.with_columns(pl.col("rel").cast(pl.String))
     log(f"  cands {cand.height} ({cand.height / max(nq, 1):.1f}/S1)")
     return cand

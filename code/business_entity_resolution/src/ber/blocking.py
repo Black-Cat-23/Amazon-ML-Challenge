@@ -103,7 +103,7 @@ def signatures(N: pl.DataFrame) -> pl.DataFrame:
 class Index:
     """Inverted index for one country's S2/S3 pool (or S1 pool, for reverse lookups)."""
 
-    def __init__(self, N: pl.DataFrame, cap: int = 2000, key_cap: int = 200, chunk: int = 1_500_000, arms=(0, 3, 4, 5, 6, 7, 8)):
+    def __init__(self, N: pl.DataFrame, cap: int = 2000, key_cap: int = 200, chunk: int = 1_000_000, arms=(0, 3, 4, 5, 6, 7, 8)):
         parts = []
         for c0 in range(0, N.height, chunk):
             tk = tokens(N.slice(c0, chunk))
@@ -134,7 +134,7 @@ class Index:
         pos = start + np.arange(cnt.sum())
         return pl.DataFrame({"h": np.repeat(uh, cnt), "id_r": self._I[pos]})
 
-    def query(self, Q: pl.DataFrame, chunk: int = 20000, caps=None, budget: int = 30_000_000) -> pl.DataFrame:
+    def query(self, Q: pl.DataFrame, chunk: int = 10000, caps=None, budget: int = 10_000_000) -> pl.DataFrame:
         """Q: normalised query frame with uint32 'id'. Returns [id, id_r, sc, prk, xrk, a0..a6].
         Chunks hold at most `chunk` queries and ~`budget` joined posting rows (sum of token df)."""
         caps = caps or CAP
