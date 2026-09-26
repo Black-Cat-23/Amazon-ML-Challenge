@@ -95,7 +95,9 @@ model = AM.from_pretrained(name, torch_dtype=torch.float16).to(dev)
 model.gradient_checkpointing_enable(); model.enable_input_require_grads()
 yes, no = tok.convert_tokens_to_ids("yes"), tok.convert_tokens_to_ids("no")
 def prompt(x, y):
-    return (f"<|im_start|>user\nSame business at the same place? Answer yes or no.\nA: {x}\nB: {y}<|im_end|>\n"
+    return (f"<|im_start|>user\nEntity Resolution: Do record A and B refer to the same real-world business? "
+            f"Account for legal forms (Pvt/Ltd), transliteration, and truncated address. "
+            f"If building/store numbers conflict, answer no. Answer strictly yes or no.\nA: {x}\nB: {y}<|im_end|>\n"
             "<|im_start|>assistant\n<think>\n\n</think>\n\n")
 def enc(a, b):
     ids = tok([prompt(x, y) for x, y in zip(a, b)], add_special_tokens=False)["input_ids"]
