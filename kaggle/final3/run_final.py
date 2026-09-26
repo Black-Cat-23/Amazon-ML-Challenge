@@ -9,7 +9,7 @@ if LOCAL:
     sys.path.insert(0, os.path.abspath("../../code/business_entity_resolution/src"))
 else:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "lightgbm==4.6.0",
-                    f"git+https://github.com/satvik-A/amazon-mlss.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
+                    f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
 import numpy as np, polars as pl, lightgbm as lgb
 from ber.io import write_submission
 from ber import model as M

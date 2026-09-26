@@ -3,7 +3,7 @@ One France S1 shard: features + level-1 p; saves missed vs hit pseudo-pairs with
 import glob, json, os, subprocess, sys, time
 REF = "__REF__"
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "lightgbm==4.6.0",
-                f"git+https://github.com/satvik-A/amazon-mlss.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
+                f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
 import numpy as np, polars as pl, lightgbm as lgb
 from ber.normalize import Normalizer
 from ber.artifacts import pseudo_pairs

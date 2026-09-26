@@ -10,7 +10,7 @@ if not LOCAL:
     W = os.path.dirname(find("polars-1.44.2*.whl")[0])
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--find-links", W, "polars==1.44.2", "rapidfuzz==3.14.6"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps",
-                    f"git+https://github.com/satvik-A/amazon-mlss.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
+                    f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
     IN = os.path.dirname(find("train_s1.parquet")[0]); ART = os.path.dirname(find("indic_lexicon.parquet")[0])
     DP = find("diag_pairs.parquet")[0]; WD = "/kaggle/working"
 else:

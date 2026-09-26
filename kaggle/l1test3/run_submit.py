@@ -15,7 +15,7 @@ elif glob.glob("/kaggle/input/**/er-src/**/ber/__init__.py", recursive=True):   
     sys.path.insert(0, os.path.dirname(os.path.dirname(glob.glob("/kaggle/input/**/er-src/**/ber/__init__.py", recursive=True)[0])))
 else:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "lightgbm==4.6.0",
-                    f"git+https://github.com/satvik-A/amazon-mlss.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
+                    f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
 import numpy as np, polars as pl, lightgbm as lgb
 from ber.normalize import Normalizer
 from ber.io import write_submission

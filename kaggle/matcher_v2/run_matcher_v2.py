@@ -7,7 +7,7 @@ if LOCAL:
     sys.path.insert(0, os.path.abspath("../../code/business_entity_resolution/src"))
 else:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "lightgbm==4.6.0",
-                    "git+https://github.com/satvik-A/amazon-mlss.git@a4c1490#subdirectory=code/business_entity_resolution"], check=True)
+                    "git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@a4c1490#subdirectory=code/business_entity_resolution"], check=True)
 import numpy as np, polars as pl, lightgbm as lgb
 from ber.normalize import Normalizer
 from ber.features import pair_features, feature_columns

@@ -15,7 +15,7 @@ if not LOCAL:
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U", "transformers"], check=True)
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "flash-linear-attention", "causal-conv1d"], check=False)
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers>=4.51", "peft>=0.13",
-                    f"git+https://github.com/satvik-A/amazon-mlss.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
+                    f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{REF}#subdirectory=code/business_entity_resolution"], check=True)
 else:
     sys.path.insert(0, os.path.abspath("../../code/business_entity_resolution/src"))
 import numpy as np, polars as pl

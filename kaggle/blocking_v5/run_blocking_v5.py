@@ -7,7 +7,7 @@ if LOCAL:
     sys.path.insert(0, os.path.abspath("../../code/business_entity_resolution/src"))
 else:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q",
-                    "git+https://github.com/satvik-A/amazon-mlss.git#subdirectory=code/business_entity_resolution"], check=True)
+                    "git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git#subdirectory=code/business_entity_resolution"], check=True)
 import numpy as np, polars as pl
 from ber.normalize import Normalizer
 from ber import blocking as B

@@ -5,7 +5,7 @@ if LOCAL:
     sys.path.insert(0, os.path.abspath("../../code/business_entity_resolution/src"))
 else:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q",
-                    "git+https://github.com/satvik-A/amazon-mlss.git#subdirectory=code/business_entity_resolution"], check=True)
+                    "git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git#subdirectory=code/business_entity_resolution"], check=True)
 import polars as pl
 from ber import artifacts as A
 from ber.translit import INDIC_RE

@@ -10,7 +10,7 @@ if not LOCAL:
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--find-links", W, "polars==1.44.2", "rapidfuzz==3.14.6"], check=True)
     if VAR.get("ref"):   # account 2 is phone-verified now: install ber from GitHub at a pinned commit
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps",
-                        f"git+https://github.com/satvik-A/amazon-mlss.git@{VAR['ref']}#subdirectory=code/business_entity_resolution"], check=True)
+                        f"git+https://github.com/Black-Cat-23/Amazon-ML-Challenge.git@{VAR['ref']}#subdirectory=code/business_entity_resolution"], check=True)
     else:
         # code: prefer the small, frequently updated er-src dataset over the copy inside er-bundle
         cands = find("er-src/**/ber/__init__.py") or find("ber/__init__.py")
